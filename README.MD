@@ -13,7 +13,7 @@ Sistem simulira proces unosa startup ideje, pokretanja validacije i obrade rezul
 - Python
 - SQLite
 - Streamlit
-- Kafka-Python biblioteka
+- kafka-python biblioteka
 
 ---
 
@@ -21,36 +21,38 @@ Sistem simulira proces unosa startup ideje, pokretanja validacije i obrade rezul
 
 Sistem se sastoji iz sledećih komponenti:
 
-Producer aplikacija  
+**Producer aplikacija**  
 Generiše i šalje događaje u Kafka topic.
 
-Consumer aplikacija  
+**Consumer aplikacija**  
 Čita događaje iz Kafka topic-a i validira njihovu strukturu.
 
-Producer-Consumer aplikacija  
+**Producer-Consumer aplikacija**  
 Obrađuje događaje, perzistira ih u bazu i šalje neispravne poruke u DLQ topic.
 
-Database sloj  
+**Database sloj**  
 Čuva obrađene događaje i statistiku o startup idejama.
 
-Dashboard  
+**Dashboard aplikacija**  
 Prikazuje statistiku o obrađenim događajima i validacijama startup ideja.
 
 ---
 
 # Kafka topic-i
 
-Glavni topic
+### Glavni topic
+
+```
 startup-events
+```
 
+Koristi se za obradu svih događaja vezanih za startup ideje.
 
-Služi za obradu svih događaja vezanih za startup ideje.
+### DLQ topic
 
-DLQ topic
-
-
+```
 startup-events-dlq
-
+```
 
 Koristi se za smeštanje neispravnih poruka koje nisu prošle validaciju.
 
@@ -58,7 +60,7 @@ Koristi se za smeštanje neispravnih poruka koje nisu prošle validaciju.
 
 # Tipovi događaja
 
-Sistem koristi sledeće događaje:
+Sistem koristi sledeće tipove događaja:
 
 - idea_submitted
 - idea_validation_requested
@@ -86,35 +88,69 @@ Primer događaja:
     "startup_stage": "pre-seed"
   }
 }
+```
 
-#Pokretanje sistema
+---
 
-1 Pokretanje Kafka okruženja
+# Pokretanje sistema
+
+## 1 Pokretanje Kafka okruženja
+
+```bash
 docker compose up -d
+```
 
-2 Kreiranje Kafka topic-a
-startup-events
-startup-events-dlq
+## 2 Provera ili kreiranje Kafka topic-a
 
-3 Pokretanje producer aplikacije
-python producer.py
+```bash
+docker exec -it kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server kafka:9092
+```
 
-4 Pokretanje consumer aplikacije
-python consumer.py
+Ako topic-i ne postoje, kreirati ih:
 
-5 Pokretanje DB consumer-a
+```bash
+docker exec -it kafka /opt/kafka/bin/kafka-topics.sh --create --topic startup-events --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1
+```
+
+```bash
+docker exec -it kafka /opt/kafka/bin/kafka-topics.sh --create --topic startup-events-dlq --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1
+```
+
+## 3 Pokretanje baze
+
+```bash
+python init_db.py
+```
+
+## 4 Pokretanje DB consumer aplikacije
+
+```bash
 python db_consumer.py
+```
 
-6 Pokretanje dashboarda
+## 5 Pokretanje producer aplikacije
+
+```bash
+python producer.py
+```
+
+## 6 Pokretanje dashboard aplikacije
+
+```bash
 streamlit run dashboard.py
+```
 
-Dashboard će biti dostupan na:
+Dashboard će biti dostupan na adresi:
 
+```
 http://localhost:8501
+```
 
+---
 
-#Struktura projekta
+# Struktura projekta
 
+```
 kafka-startup-validation
 │
 ├── docker-compose.yml
@@ -129,30 +165,38 @@ kafka-startup-validation
 │   ├── startup_events.db
 │   ├── requirements.txt
 │   └── .env
+```
 
+---
 
-#Baza podataka
+# Baza podataka
 
 Sistem koristi SQLite bazu sa dve tabele:
 
-events
-Čuva sve obrađene događaje.
+**events**  
+Čuva sve obrađene događaje i njihov originalni JSON payload.
 
-idea_stats
-Čuva agregirane statistike o startup idejama.
+**idea_stats**  
+Čuva agregirane statistike o događajima po startup ideji.
 
-#Idempotentnost
+---
 
-Idempotentnost upisa obezbeđena je korišćenjem jedinstvenog identifikatora događaja event_id, koji je definisan kao UNIQUE u bazi podataka.
+# Idempotentnost
 
-#Dashboard
+Idempotentnost upisa obezbeđena je korišćenjem jedinstvenog identifikatora događaja `event_id`, koji je definisan kao UNIQUE u bazi podataka.
+
+Na taj način isti događaj ne može biti upisan više puta.
+
+---
+
+# Dashboard
 
 Dashboard implementiran korišćenjem Streamlit biblioteke omogućava pregled:
 
-ukupnog broja događaja
+- ukupnog broja događaja
+- statistike po startup ideji
+- broja uspešnih validacija
+- svih obrađenih događaja
 
-statistike po startup ideji
+---
 
-broja uspešnih validacija
-
-svih obrađenih događaja
