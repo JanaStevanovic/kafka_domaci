@@ -1,0 +1,158 @@
+# Kafka Event Processing System for Startup Idea Validation
+
+Ovaj projekat implementira sistem za obradu događaja u okviru platforme za validaciju startup ideja korišćenjem Apache Kafka event-driven arhitekture.
+
+Sistem simulira proces unosa startup ideje, pokretanja validacije i obrade rezultata, pri čemu se događaji šalju kroz Kafka infrastrukturu i perzistiraju u lokalnu bazu podataka.
+
+---
+
+# Tehnologije
+
+- Apache Kafka
+- Docker
+- Python
+- SQLite
+- Streamlit
+- Kafka-Python biblioteka
+
+---
+
+# Arhitektura sistema
+
+Sistem se sastoji iz sledećih komponenti:
+
+Producer aplikacija  
+Generiše i šalje događaje u Kafka topic.
+
+Consumer aplikacija  
+Čita događaje iz Kafka topic-a i validira njihovu strukturu.
+
+Producer-Consumer aplikacija  
+Obrađuje događaje, perzistira ih u bazu i šalje neispravne poruke u DLQ topic.
+
+Database sloj  
+Čuva obrađene događaje i statistiku o startup idejama.
+
+Dashboard  
+Prikazuje statistiku o obrađenim događajima i validacijama startup ideja.
+
+---
+
+# Kafka topic-i
+
+Glavni topic
+startup-events
+
+
+Služi za obradu svih događaja vezanih za startup ideje.
+
+DLQ topic
+
+
+startup-events-dlq
+
+
+Koristi se za smeštanje neispravnih poruka koje nisu prošle validaciju.
+
+---
+
+# Tipovi događaja
+
+Sistem koristi sledeće događaje:
+
+- idea_submitted
+- idea_validation_requested
+- idea_validation_completed
+- idea_validation_failed
+- feedback_viewed
+
+---
+
+# JSON struktura događaja
+
+Primer događaja:
+
+```json
+{
+  "event_id": "uuid",
+  "event_type": "idea_submitted",
+  "timestamp": "2026-03-09T12:00:00Z",
+  "business_id": "idea_1234",
+  "payload": {
+    "startup_name": "AgroVision",
+    "problem": "Poljoprivrednici nemaju precizne podatke o usevima",
+    "solution": "AI analiza useva pomoću dronova",
+    "target_market": "Poljoprivreda",
+    "startup_stage": "pre-seed"
+  }
+}
+
+#Pokretanje sistema
+
+1 Pokretanje Kafka okruženja
+docker compose up -d
+
+2 Kreiranje Kafka topic-a
+startup-events
+startup-events-dlq
+
+3 Pokretanje producer aplikacije
+python producer.py
+
+4 Pokretanje consumer aplikacije
+python consumer.py
+
+5 Pokretanje DB consumer-a
+python db_consumer.py
+
+6 Pokretanje dashboarda
+streamlit run dashboard.py
+
+Dashboard će biti dostupan na:
+
+http://localhost:8501
+
+
+#Struktura projekta
+
+kafka-startup-validation
+│
+├── docker-compose.yml
+├── README.md
+│
+├── app
+│   ├── producer.py
+│   ├── consumer.py
+│   ├── db_consumer.py
+│   ├── init_db.py
+│   ├── dashboard.py
+│   ├── startup_events.db
+│   ├── requirements.txt
+│   └── .env
+
+
+#Baza podataka
+
+Sistem koristi SQLite bazu sa dve tabele:
+
+events
+Čuva sve obrađene događaje.
+
+idea_stats
+Čuva agregirane statistike o startup idejama.
+
+#Idempotentnost
+
+Idempotentnost upisa obezbeđena je korišćenjem jedinstvenog identifikatora događaja event_id, koji je definisan kao UNIQUE u bazi podataka.
+
+#Dashboard
+
+Dashboard implementiran korišćenjem Streamlit biblioteke omogućava pregled:
+
+ukupnog broja događaja
+
+statistike po startup ideji
+
+broja uspešnih validacija
+
+svih obrađenih događaja
