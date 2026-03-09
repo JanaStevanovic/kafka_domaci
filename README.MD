@@ -1,4 +1,4 @@
-# Kafka Event Processing System for Startup Idea Validation
+# Kafka sistem za obradu događaja za validaciju startap ideja
 
 Ovaj projekat implementira sistem za obradu događaja u okviru platforme za validaciju startup ideja korišćenjem Apache Kafka event-driven arhitekture.
 
