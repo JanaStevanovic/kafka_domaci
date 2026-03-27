@@ -137,6 +137,7 @@ python producer.py
 ## 6 Pokretanje dashboard aplikacije
 
 ```bash
+.\venv\Scripts\Activate.ps1
 streamlit run dashboard.py
 ```
 
